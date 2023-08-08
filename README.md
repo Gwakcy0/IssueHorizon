@@ -10,8 +10,12 @@
 ![샘플 웹페이지](/image/sample_webpage.png)
 
 # 프로젝트 사용 방법
-구글 Colab으로 열어서 사용하든가, gitHub 클론하고 다음 명령어 치기
+구글 Colab으로 열어서 사용하기: 
+<a target="_blank" href="https://colab.research.google.com/github/Gwakcy0/IssueHorizon.git">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
+혹은 gitHub 클론하고 다음 명령어 치기
 ```bash
 pip install -r requirements.txt
 ```

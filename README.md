@@ -24,6 +24,12 @@ pip install -r requirements.txt
 pip freeze > requirements.txt
 ```
 
+그리고 다시 내부에서 kpfbert를 clone해 준다.
+```bash
+git clone https://github.com/KPF-bigkinds/KPF-BERT.git
+move KPF-BERT kpfbert
+```
+
 # 목표
 ## 1. 사회 이슈의 변화, 사람들의 감정 표현
 - 크롤링한 데이터가 엑셀 형식으로 주어짐

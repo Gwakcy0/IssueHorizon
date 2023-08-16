@@ -38,7 +38,9 @@ from pylab import rcParams
 import matplotlib.pyplot as plt
 from matplotlib import rc
 
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from dataset import *
 from model import *
 
@@ -87,29 +89,7 @@ test_df = test_df[:downsize//10]
 val_df = val_df[:downsize//10]
 print('train/validation/test downsized: ', train_df.shape, val_df.shape, test_df.shape)
 
-# json 파일 혹은 딕셔너리 데이터를 dataframe으로 바꾸기
-def preprocess_data(data):
-    outs = []
-    for doc in data['documents']:
-        line = []
-        line.append(doc.get('media_name'))
-        line.append(doc['id'])
-        para = []
-        for sent in doc['text']:
-            for s in sent:
-                para.append(s['sentence'])
-        line.append(para)
-        line.append(doc['abstractive'][0])
-        line.append(doc['extractive'])
-        a = doc['extractive']
-        if a[0] == None or a[1] == None or a[2] == None:
-            continue
-        outs.append(line)
-
-    outs_df = pd.DataFrame(outs)
-    outs_df.columns = ['media', 'id', 'article_original', 'abstractive', 'extractive']
-    return outs_df
-
+# dataframe preprocessing
 print(train_df.head(1))
 train_df = preprocess_data(train_df)
 print(train_df.head(1))
@@ -127,8 +107,6 @@ print('2 :', train_df['article_original'][i][train_df['extractive'][i][1]])
 print('3 :', train_df['article_original'][i][train_df['extractive'][i][2]])
 print('===== 생성본문 =====')
 print(train_df['abstractive'][i])
-
-
 
 
 '''
@@ -156,3 +134,37 @@ data_module = SummDataModule(
   max_token_len=MAX_TOKEN_COUNT
 )
 
+model = Summarizer(data_len=len(train_df))
+print(model)
+
+# # Load the TensorBoard extension
+# os.system("python -m tensorboard.main")
+
+# # Launch TensorBoard with the specified log directory
+# logdir = "./lightning_logs"
+# os.system(f"tensorboard --logdir {logdir} --bind_all")
+
+checkpoint_callback = ModelCheckpoint(
+    dirpath="checkpoints",
+    filename="best-checkpoint",
+    save_top_k=1,
+    verbose=True,
+    monitor="avg_val_loss",
+    mode="min"
+)
+
+logger = TensorBoardLogger("lightning_logs", name="kpfBERT_Summary")
+
+early_stopping_callback = EarlyStopping(monitor='avg_val_loss', patience=3)
+
+trainer = pl.Trainer(
+    logger=logger,
+    checkpoint_callback=checkpoint_callback,
+    callbacks=[early_stopping_callback],
+    max_epochs=N_EPOCHS,
+    gpus=1,
+#     precision=16, #소스 수정 또는 패키지 재설치 필요... 런타임 에러.
+    progress_bar_refresh_rate=30
+)
+
+trainer.fit(model, data_module)

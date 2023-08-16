@@ -12,9 +12,13 @@ from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
 from torch.nn.init import xavier_uniform_
 
 import pytorch_lightning as pl
-# from pytorch_lightning.metrics.functional import accuracy, f1, auroc
 
 from pylab import rcParams
+
+BERT_MODEL_NAME = 'kpfbert'
+MAX_TOKEN_COUNT = 512
+N_EPOCHS = 10
+BATCH_SIZE = 4
 
 class PositionalEncoding(nn.Module):
 
@@ -304,13 +308,14 @@ class MultiHeadedAttention(nn.Module):
 
 class Summarizer(pl.LightningModule):
 
-    def __init__(self, n_training_steps=None, n_warmup_steps=None):
+    def __init__(self, n_training_steps=None, n_warmup_steps=None, data_len=0):
         super().__init__()
         self.max_pos = 512
         self.bert = BertModel.from_pretrained(BERT_MODEL_NAME) #, return_dict=True)
         self.ext_layer = ExtTransformerEncoder()
         self.n_training_steps = n_training_steps
         self.n_warmup_steps = n_warmup_steps
+        self.data_len = data_len
         self.loss = nn.BCELoss(reduction='none')
     
         for p in self.ext_layer.parameters():
@@ -422,7 +427,7 @@ class Summarizer(pl.LightningModule):
         
         optimizer = AdamW(self.parameters(), lr=2e-5)
 
-        steps_per_epoch=len(train_df) // BATCH_SIZE
+        steps_per_epoch = self.data_len // BATCH_SIZE
         total_training_steps = steps_per_epoch * N_EPOCHS
         
         scheduler = get_linear_schedule_with_warmup(

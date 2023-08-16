@@ -8,6 +8,29 @@ MAX_TOKEN_COUNT = 512
 N_EPOCHS = 10
 BATCH_SIZE = 4
 
+# json 파일 혹은 딕셔너리 데이터를 dataframe으로 바꾸기
+def preprocess_data(data):
+    outs = []
+    for doc in data['documents']:
+        line = []
+        line.append(doc.get('media_name'))
+        line.append(doc['id'])
+        para = []
+        for sent in doc['text']:
+            for s in sent:
+                para.append(s['sentence'])
+        line.append(para)
+        line.append(doc['abstractive'][0])
+        line.append(doc['extractive'])
+        a = doc['extractive']
+        if a[0] == None or a[1] == None or a[2] == None:
+            continue
+        outs.append(line)
+
+    outs_df = pd.DataFrame(outs)
+    outs_df.columns = ['media', 'id', 'article_original', 'abstractive', 'extractive']
+    return outs_df
+
 class SummDataset(Dataset):
 
     def __init__(

@@ -1,3 +1,4 @@
+# for text summarization
 pytorch-lightning==1.2.8
 transformers
 torch
@@ -7,3 +8,6 @@ matplotlib
 scikit-learn
 seaborn
 kss
+# for preprocessing
+hanja
+openpyxl

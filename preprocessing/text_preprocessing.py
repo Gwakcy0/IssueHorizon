@@ -59,7 +59,7 @@ def preprocessing(text_list):
 def clean_dataset(dataframe):
     # 1. Drop NaN and duplicate data from Original dataset
     dataframe = dataframe.dropna(subset = ['내용'])
-    dataframe = dataframe.drop_duplicates(subset = ['내용'])
+    # dataframe = dataframe.drop_duplicates(subset = ['내용'])
     # dataframe = dataframe.drop_duplicates(subset = ['제목'])
 
     # 2. Datetime and order by Date
@@ -79,7 +79,7 @@ def clean_dataset(dataframe):
 
     # 5. Drop NaN and duplicate data from Cleaned dataset
     dataframe = dataframe.dropna(subset = ['내용'])
-    dataframe = dataframe.drop_duplicates(subset=['내용'])
+    # dataframe = dataframe.drop_duplicates(subset=['내용'])
     # dataframe = dataframe.drop_duplicates(subset=['제목'])
     print(">> Data Size :", len(dataframe))
 

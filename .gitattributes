@@ -1,5 +1,1 @@
 data/all.csv filter=lfs diff=lfs merge=lfs -text
-<<<<<<< HEAD
-=======
-data/train_original_0.json filter=lfs diff=lfs merge=lfs -text
->>>>>>> 9a3a14ad5a524f6cc928efda23b2009bdafcc8ca

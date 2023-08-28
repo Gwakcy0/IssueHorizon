@@ -4,3 +4,4 @@ data/docSum_texts
 .pyc
 __pycache__
 lightning_logs
+data/all.csv

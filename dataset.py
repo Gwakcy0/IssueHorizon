@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 
 MAX_TOKEN_COUNT = 512
 N_EPOCHS = 10

@@ -11,7 +11,7 @@ from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
 
 from torch.nn.init import xavier_uniform_
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 
 from pylab import rcParams
 
@@ -308,41 +308,41 @@ class MultiHeadedAttention(nn.Module):
 
 class Summarizer(pl.LightningModule):
 
-    def __init__(self, n_training_steps=None, n_warmup_steps=None, data_len=0):
+    def __init__(self, n_training_steps=None, n_warmup_steps=None):
         super().__init__()
         self.max_pos = 512
         self.bert = BertModel.from_pretrained(BERT_MODEL_NAME) #, return_dict=True)
         self.ext_layer = ExtTransformerEncoder()
         self.n_training_steps = n_training_steps
         self.n_warmup_steps = n_warmup_steps
-        self.data_len = data_len
         self.loss = nn.BCELoss(reduction='none')
-    
+
         for p in self.ext_layer.parameters():
             if p.dim() > 1:
                 xavier_uniform_(p)
+        self.training_step_outputs, self.validation_step_outputs, self.test_step_outputs = [], [], []
 
     def forward(self, src, segs, clss, labels=None): #, input_ids, attention_mask, labels=None):
-        
+
         mask_src = ~(src == 0) #1 - (src == 0)
         mask_cls = ~(clss == -1) #1 - (clss == -1)
 
         top_vec = self.bert(src, token_type_ids=segs, attention_mask=mask_src)
         top_vec = top_vec.last_hidden_state
-        
+
         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
         sents_vec = sents_vec * mask_cls[:, :, None].float()
 
         sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
-        
+
         loss = 0
         if labels is not None:
             loss = self.loss(sent_scores, labels)
-            
+
             loss = (loss * mask_cls.float()).sum() / len(labels)
-        
+
         return loss, sent_scores
-    
+
     def step(self, batch):
 
         src = batch['src']
@@ -352,31 +352,34 @@ class Summarizer(pl.LightningModule):
             labels = None
         segs = batch['segs']
         clss = batch['clss']
-        
-        loss, sent_scores = self(src, segs, clss, labels)    
-        
+
+        loss, sent_scores = self(src, segs, clss, labels)
+
         return loss, sent_scores, labels
 
     def training_step(self, batch, batch_idx):
 
         loss, sent_scores, labels = self.step(batch)
         self.log("train_loss", loss, prog_bar=True, logger=True)
-        
-        return {"loss": loss, "predictions": sent_scores, "labels": labels}
+        self.training_step_outputs.append({"loss": loss, "predictions": sent_scores, "labels": labels})
+
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        
+
         loss, sent_scores, labels = self.step(batch)
         self.log("val_loss", loss, prog_bar=True, logger=True)
-        
-        return {"loss": loss, "predictions": sent_scores, "labels": labels}
+        self.validation_step_outputs.append({"loss": loss, "predictions": sent_scores, "labels": labels})
+
+        return loss
 
     def test_step(self, batch, batch_idx):
-        
+
         loss, sent_scores, labels = self.step(batch)
         self.log("test_loss", loss, prog_bar=True, logger=True)
-        
-        return {"loss": loss, "predictions": sent_scores, "labels": labels}
+        self.test_step_outputs.append({"loss": loss, "predictions": sent_scores, "labels": labels})
+
+        return loss
 
     def acc_loss(self, outputs):
         total_loss = 0
@@ -387,49 +390,41 @@ class Summarizer(pl.LightningModule):
             loss = outp['loss'].cpu()
             for label, idx in zip(labels, idxs):
                 for i in range(1,3):
-                    if label[idx[-i-1]] == 1 : 
+                    if label[idx[-i-1]] == 1 :
                         hit_cnt += 1
 
             total_loss += loss
-            
+
         avg_loss = total_loss / len(outputs)
         acc = hit_cnt / (3*len(outputs)*len(labels))
-        
+
         return acc, avg_loss
-        
-    def training_epoch_end(self, outputs):
-        
-        acc, avg_loss = self.acc_loss(outputs)
-        
+
+    def on_train_epoch_end(self):
+        acc, avg_loss = self.acc_loss(self.training_step_outputs)
         print('acc:', acc, 'avg_loss:', avg_loss)
-        
         self.log('avg_train_loss', avg_loss, prog_bar=True, logger=True)
+        self.training_step_outputs.clear()
 
-    def validation_epoch_end(self, outputs):
-        
-        acc, avg_loss = self.acc_loss(outputs)
-        
-        print('val_acc:', acc, 'avg_val_loss:', avg_loss)
-        
+    def on_validation_epoch_end(self):
+        acc, avg_loss = self.acc_loss(self.validation_step_outputs)
+        print('val_acc:', acc, 'val_avg_loss:', avg_loss)
         self.log('avg_val_loss', avg_loss, prog_bar=True, logger=True)
+        self.validation_step_outputs.clear()
 
-    def test_epoch_end(self, outputs):
-        
-        acc, avg_loss = self.acc_loss(outputs)
-        
-        print('test_acc:', acc, 'avg_test_loss:', avg_loss)
-        
+    def on_test_epoch_end(self):
+        acc, avg_loss = self.acc_loss(self.test_step_outputs)
+        print('test_acc:', acc, 'test_avg_loss:', avg_loss)
         self.log('avg_test_loss', avg_loss, prog_bar=True, logger=True)
+        self.test_step_outputs.clear()
 
-        return
-        
     def configure_optimizers(self):
-        
+
         optimizer = AdamW(self.parameters(), lr=2e-5)
 
-        steps_per_epoch = self.data_len // BATCH_SIZE
+        steps_per_epoch=len(train_df) // BATCH_SIZE
         total_training_steps = steps_per_epoch * N_EPOCHS
-        
+
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
             num_warmup_steps=steps_per_epoch,

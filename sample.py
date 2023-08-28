@@ -25,10 +25,10 @@ from transformers import BertModel, BertTokenizer, AdamW, get_linear_schedule_wi
 
 from torch.nn.init import xavier_uniform_
 
-import pytorch_lightning as pl
-from pytorch_lightning.metrics.functional import accuracy, f1, auroc
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from pytorch_lightning.loggers import TensorBoardLogger
+import lightning.pytorch as pl
+# from lightning.pytorch.metrics.functional import accuracy, f1, auroc
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.loggers import TensorBoardLogger
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, multilabel_confusion_matrix
@@ -157,13 +157,11 @@ logger = TensorBoardLogger("lightning_logs", name="kpfBERT_Summary")
 early_stopping_callback = EarlyStopping(monitor='avg_val_loss', patience=3)
 
 trainer = pl.Trainer(
+    accelerator="auto",
+    devices="auto",
+    callbacks=[early_stopping_callback, checkpoint_callback],
     logger=logger,
-    checkpoint_callback=checkpoint_callback,
-    callbacks=[early_stopping_callback],
-    max_epochs=N_EPOCHS,
-    gpus=1,
-    precision=16, # 소스 수정 또는 패키지 재설치 필요... 런타임 에러.
-    progress_bar_refresh_rate=30
+    max_epochs=N_EPOCHS
 )
 
 trainer.fit(model, data_module)

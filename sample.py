@@ -89,8 +89,12 @@ val_df = val_df[:downsize//10]
 print('train/validation/test downsized: ', train_df.shape, val_df.shape, test_df.shape)
 
 # dataframe preprocessing
+print('before preprocessing:')
 print(train_df.head(1))
 train_df = preprocess_data(train_df)
+test_df = preprocess_data(test_df)
+val_df = preprocess_data(val_df)
+print('after preprocessing')
 print(train_df.head(1))
 
 # 본문 프린트해보기
@@ -134,7 +138,7 @@ data_module = SummDataModule(
 )
 
 model = Summarizer(data_len=len(train_df))
-print(model)
+# print(model)
 
 # # Load the TensorBoard extension
 # os.system("python -m tensorboard.main")
@@ -164,6 +168,6 @@ trainer = pl.Trainer(
     max_epochs=N_EPOCHS
 )
 
-trainer.fit(model, data_module)
+trainer.fit(model=model, datamodule=data_module)
 trainer.test()
 

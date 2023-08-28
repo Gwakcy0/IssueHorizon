@@ -308,8 +308,9 @@ class MultiHeadedAttention(nn.Module):
 
 class Summarizer(pl.LightningModule):
 
-    def __init__(self, n_training_steps=None, n_warmup_steps=None):
+    def __init__(self, data_len, n_training_steps=None, n_warmup_steps=None):
         super().__init__()
+        self.data_len = data_len
         self.max_pos = 512
         self.bert = BertModel.from_pretrained(BERT_MODEL_NAME) #, return_dict=True)
         self.ext_layer = ExtTransformerEncoder()
@@ -422,7 +423,7 @@ class Summarizer(pl.LightningModule):
 
         optimizer = AdamW(self.parameters(), lr=2e-5)
 
-        steps_per_epoch=len(train_df) // BATCH_SIZE
+        steps_per_epoch=self.data_len // BATCH_SIZE
         total_training_steps = steps_per_epoch * N_EPOCHS
 
         scheduler = get_linear_schedule_with_warmup(

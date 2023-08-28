@@ -11,7 +11,7 @@
 
 # 프로젝트 사용 방법
 구글 Colab으로 열어서 사용하기: 
-<a target="_blank" href="https://colab.research.google.com/github/Gwakcy0/IssueHorizon/blob/main/codes/sample_bert.ipynb">
+<a target="_blank" href="https://colab.research.google.com/github/Gwakcy0/IssueHorizon/blob/master/codes/sample_bert.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
